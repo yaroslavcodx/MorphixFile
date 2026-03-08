@@ -53,3 +53,15 @@ tests/data/*.output
 # OS
 .DS_Store
 Thumbs.db
+
+# Real-ESRGAN weights (downloaded automatically)
+parser/image/weights/*.pth
+
+# Test output images
+*.png
+test_*.jpg
+*_narrowed.*
+*_enhanced.*
+*_resized.*
+*_upscaled.*
+*_realesrgan.*

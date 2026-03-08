@@ -10,7 +10,7 @@
 
 ## Возможности
 
-### Поддерживаемые форматы (17)
+### Поддерживаемые форматы (17+)
 
 | Категория | Форматы |
 |-----------|---------|
@@ -20,6 +20,7 @@
 | Веб | `.xml`, `.html` |
 | Бинарные | `.bin` (hex-view) |
 | Архивы | `.zip`, `.tar`, `.gz`, `.tgz` |
+| **Изображения** | **`.jpg`, `.jpeg`, `.png`, `.webp`, `.bmp`, `.tiff`** |
 
 ### Функции
 
@@ -30,6 +31,7 @@
 - **Автоопределение формата** — по расширению и содержимому
 - **Поддержка кодировок** — UTF-8, UTF-16, Windows-1251
 - **Логирование** — статистика операций
+- **Обработка изображений** — изменение размера, увеличение, улучшение качества
 
 ## Установка
 
@@ -39,7 +41,31 @@ pip install -e .
 
 # Или через pip
 pip install universal-file-parser
+
+# С поддержкой обработки изображений (Real-ESRGAN)
+pip install -e ".[image]"
 ```
+
+### Зависимости
+
+**Основные:**
+- `openpyxl>=3.1.0` — работа с Excel
+- `odfpy>=1.4.1` — работа с ODS
+- `pyyaml>=6.0` — парсинг YAML
+- `toml>=0.10.2` — парсинг TOML
+- `click>=8.1.0` — CLI фреймворк
+- `chardet>=5.0.0` — определение кодировки
+- `Pillow>=10.0.0` — обработка изображений
+- `numpy>=1.24.0` — работа с массивами
+- `opencv-python>=4.5.0` — компьютерное зрение
+
+**Опциональные (для AI супер-разрешения):**
+- `torch>=2.1.0` — PyTorch
+- `torchvision>=0.16.0` — компьютерное зрение
+- `basicsr>=1.4.2` — базовая библиотека для супер-разрешения
+- `realesrgan>=0.3.0` — Real-ESRGAN
+- `facexlib>=0.2.5` — улучшение лиц
+- `gfpgan>=1.3.5` — восстановление лиц
 
 ## Использование
 
@@ -83,6 +109,56 @@ parser analyze --file data.csv --start 10 --end 100
 # Анализ с регулярным выражением
 parser analyze --file app.log --regex "Exception.*"
 ```
+
+#### Обработка изображений
+
+```bash
+# Изменение размера
+parser image resize --file photo.jpg --width 800
+parser image resize --file photo.jpg --scale 50
+
+# Увеличение с улучшением качества
+parser image upscale --file photo.jpg --scale 2
+
+# Улучшение качества (sharpening, contrast, brightness)
+parser image enhance --file photo.jpg
+
+# Информация об изображении
+parser image info --file photo.jpg
+
+# Пакетная обработка
+parser image resize --folder ./images --width 1024 --output-dir ./resized/
+```
+
+#### AI супер-разрешение (Real-ESRGAN)
+
+```bash
+# Увеличение фотографии с 4x
+parser image super-resolution --file photo.jpg --model RealESRGAN_x4plus
+
+# Увеличение аниме изображения
+parser image super-resolution --file anime.png --model RealESRGAN_x4plus_anime_6B
+
+# Увеличение с улучшением лиц
+parser image super-resolution --file portrait.jpg --face-enhance
+
+# Пакетная обработка
+parser image super-resolution --folder ./photos --output-dir ./enhanced/
+
+# Список доступных моделей
+parser image models --list-models
+```
+
+### Модели Real-ESRGAN
+
+| Модель | Масштаб | Описание | Рекомендация |
+|--------|---------|----------|-------------|
+| `RealESRGAN_x4plus` | 4x | Универсальная для фотографий | ✅ Лучшая для фото |
+| `RealESRNet_x4plus` | 4x | Меньше артефактов, мягче | ⚠️ Может быть размыто |
+| `RealESRGAN_x4plus_anime_6B` | 4x | Для аниме и иллюстраций | ❌ Не для фото |
+| `RealESRGAN_x2plus` | 2x | Для 2x увеличения | ✅ Для меньшего увеличения |
+| `realesr-animevideov3` | 4x | Для аниме видео | ❌ Не для фото |
+| `realesr-general-x4v3` | 4x | Универсальная с шумоподавлением | ⚠️ Можно с --denoise-strength |
 
 ### Python API
 
@@ -140,6 +216,61 @@ for filename, data in results.items():
     parser.save(data, f"output/{filename}")
 ```
 
+#### Обработка изображений
+
+```python
+from parser.image import resize_image, upscale_image, enhance_image, get_image_info
+
+# Изменение размера
+resize_image("photo.jpg", width=800)
+resize_image("photo.jpg", scale=0.5)  # 50% от оригинала
+
+# Увеличение с улучшением качества
+upscale_image("photo.jpg", scale=2.0, sharpen=True)
+
+# Улучшение качества
+enhance_image(
+    "photo.jpg",
+    sharpen=True,
+    contrast=True,
+    auto_brightness=True,
+    noise_reduction=False,
+)
+
+# Информация об изображении
+info = get_image_info("photo.jpg")
+print(f"Размер: {info['width']}x{info['height']}")
+```
+
+#### AI супер-разрешение (Real-ESRGAN)
+
+```python
+from parser.image import super_resolution, get_available_models
+
+# Увеличение фотографии с 4x
+result_path = super_resolution("photo.jpg", model_name="RealESRGAN_x4plus")
+
+# Увеличение аниме изображения
+result_path = super_resolution("anime.png", model_name="RealESRGAN_x4plus_anime_6B")
+
+# С возвратом статистики
+result_path, stats = super_resolution("photo.jpg", return_stats=True)
+print(f"Увеличено с {stats.original_size} до {stats.result_size}")
+
+# Пакетная обработка
+from parser.image import super_resolution_batch
+results = super_resolution_batch(
+    ["photo1.jpg", "photo2.jpg"],
+    output_dir="enhanced/",
+    model_name="RealESRGAN_x4plus"
+)
+
+# Список доступных моделей
+models = get_available_models()
+for name, info in models.items():
+    print(f"{name}: {info['description']}")
+```
+
 ## Структура проекта
 
 ```
@@ -149,6 +280,14 @@ universal-file-parser/
 │   ├── cli.py
 │   ├── base.py
 │   ├── utils.py
+│   ├── parser.py
+│   ├── image/              # Модуль обработки изображений
+│   │   ├── __init__.py
+│   │   ├── utils.py
+│   │   ├── resize.py
+│   │   ├── upscale.py
+│   │   ├── enhance.py
+│   │   └── esrgan.py       # Real-ESRGAN интеграция
 │   └── formats/
 │       ├── __init__.py
 │       ├── text_parser.py
@@ -165,14 +304,24 @@ universal-file-parser/
 │       └── archive_parser.py
 ├── tests/
 │   ├── __init__.py
+│   ├── test_all_formats.py
+│   ├── test_parser.py
 │   ├── test_csv.py
 │   ├── test_json.py
 │   ├── test_yaml.py
 │   ├── test_xml.py
-│   └── test_utils.py
-├── README.md
-├── requirements.txt
+│   ├── test_utils.py
+│   ├── test_image.py         # Тесты обработки изображений
+│   ├── test_esrgan.py        # Тесты Real-ESRGAN
+│   └── data/                 # Тестовые файлы
+├── examples/                  # Примеры использования
+├── pyproject.toml             # Конфигурация проекта
 ├── setup.py
+├── requirements.txt
+├── pytest.ini
+├── README.md
+├── CHANGELOG.md
+├── CONTRIBUTING.md
 └── LICENSE
 ```
 
